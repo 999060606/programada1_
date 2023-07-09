@@ -1,0 +1,169 @@
+---
+title: "Practica Programada1"
+author: "Nancy Lopez Gomez"
+date: "2023-07-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(readr)
+library(readxl)
+library(tidyr)
+library(janitor) 
+library(lubridate) 
+```
+## Práctica programada 1: Preparación y limpieza de datos
+
+a. Cree un archivo Rmarkdown para resolver esta práctica programada. En el chunk de setup cargue las
+librerías que considere necesarias para resolver la práctica. Los datos para trabajar puede cargarlos con
+la función read_csv2 de readr directamente de la siguiente dirección: “https://raw.githubusercontent.
+com/isa229/programacion_analisis_datos_ii/main/netflix_info.csv” (1pto)
+
+```{r}
+datos_netflix <- "https://raw.githubusercontent.com/isa229/programacion_analisis_datos_ii/main/netflix_info.csv"
+datos <- read_csv2(datos_netflix)
+```
+
+b)Ajuste los nombres de las columnas para que estén en español. 
+
+```{r}
+nombres_columnas <- c("ID", "Tipo", "Titulo", "Director", "Pais", "fecha", "año_lanzamiento", "calificacion", "Duracion", "Categoria")
+colnames(datos) <- nombres_columnas
+```
+
+c. Elimine filas duplicadas. (2pts)
+```{r}
+duplicados <- get_dupes(datos) ## muestraregistros estan duplicados
+```
+
+```{r}
+datos_sin_filas_duplicadas <- distinct(datos) #cantidad conteo diferenciado
+```
+```{r}
+numero_filas_originales <- nrow(datos)
+numero_filas_sin_filas_duplicadas <- nrow(datos_sin_filas_duplicadas)
+```
+
+d. Elimine filas y columnas vacías. (2pts)
+
+```{r}
+datos_sin_vacios <- datos_sin_filas_duplicadas |> 
+  remove_empty(which = c("rows", "cols"))
+```
+
+e. Elimine la variable correspondiente al año de lanzamiento (release_year.) (2pts)
+
+```{r}
+datos_limpios <- datos_sin_vacios |> 
+  select(-año_lanzamiento) |> 
+  distinct()
+```
+
+f. Haga una inspección de las variables type y country para determinar si hay observaciones mal escritas o escritas de diferentes maneras. Si es ahí, haga la limpieza para poder homogenizar esos datos. (10pts)
+
+```{r}
+type_table <- as.data.frame(table(datos_limpios$Tipo))
+type_table #conteo de valores unico para sirve la funcion y se crea el dataframe
+```
+```{r}
+country_table <- as.data.frame(table(datos$Pais))
+country_table 
+```
+
+```{r}
+datos_limpios <- datos_limpios |>
+  mutate(across(c(Tipo), function(x) ifelse(x == "movie", "Movie", x))) |>
+  mutate(across(c(Tipo), function(x) ifelse(x == "tv show", "TV Show", x))) |>
+  mutate(across(c(Tipo), function(x) ifelse(x == "Movi", "Movie", x))) |> 
+  mutate(across(c(Tipo), function(x) ifelse(x == "TV SHOW", "TV Show", x)))
+```
+
+```{r}
+unique(datos_limpios$Tipo) #funcion para verificar si se modificaron los cambios de las variables
+```
+
+```{r}
+datos_limpios<- datos_limpios|>
+  mutate(Pais = ifelse(Pais == "united states", "United States", Pais)) |> 
+  mutate(Pais = ifelse(Pais == "india", "India", Pais)) |> 
+  mutate(pais = ifelse(Pais == "pakistan", "Pakistan", Pais)) |> 
+  mutate(pais = ifelse(Pais == "canada", "Canada", Pais))
+```
+
+```{r}
+unique(datos_limpios$Pais)
+```
+g. Para todas las columnas de tipo carácter, en donde haya NA, coloque “Sin información”. (4pts)
+
+```{r}
+datos_limpios <- datos_limpios |> 
+  mutate(across(where(is.character), ~replace(., is.na(.), "Sin información")))
+```
+h. Añada a su conjunto de datos una nueva columna llamada anyo que indique el año en que el show o película fue añadido a Netflix. Añada también una columna llamada mes que indique el mes en que el show o película fue añadido a Netflix. (6pts)
+
+```{r}
+datos_limpios <- datos_limpios |> 
+  mutate(fecha = mdy(fecha))
+
+datos_limpios <- datos_limpios |>                              
+  mutate(Año = year(fecha))
+
+datos_limpios <- datos_limpios |>                              
+  mutate(Mes = month(fecha))
+```
+
+Una vez que haya terminado la limpieza anterior, responda las siguientes preguntas:
+
+i. Cuántas películas y shows de TV hay por país? (4pts)
+
+```{r}
+cantidad_pelis <- datos_limpios |> 
+  filter(Tipo %in% c("Movie", "TV Show")) |> 
+  count(Pais, Tipo) |> 
+  as.data.frame()
+```
+
+
+j. Cuáles son los 10 directores con mayor cantidad de películas (sin contar shows de TV) en Netflix?
+Ordénelos por orden descendente. (4pts)
+
+```{r}
+directores <- datos_limpios |>
+  filter(Tipo=="Movie") |>
+  count(Director, Tipo) |>
+  arrange(desc(n)) |> 
+  head(10)
+```
+k. Cuáles son los 10 directores con mayor cantidad de shows de TV (sin contar películas) en Netflix?Ordénelos por orden descendente. (4pts)
+
+```{r}
+directores10 <- datos_limpios |>
+  filter(Tipo=="TV Show") |>
+  count(Director, Tipo) |>
+  arrange(desc(n)) |> 
+  head(10)
+```
+l. Obtenga la lista de películas y shows de TV que se añadieron en marzo del año 2020. Cuántos fueron?
+(4pts)
+`
+
+```{r}
+Lista_peliculas <- datos_limpios |>
+  filter(Tipo =="Movie", Año == 2020, Mes == 3)
+
+Total <- nrow(Lista_peliculas)
+#en total hay 93 peliculas que se añadieron en marzo del 2020
+```
+
+```{r}
+Lista_showTV <- datos_limpios|>
+  filter(Tipo =="TV Show", Año == 2020, Mes == 3)
+
+Total <- nrow(Lista_showTV)
+#en total hay 44 TV show que se añadieron en marzo del 2020
+```
+```
+
+
