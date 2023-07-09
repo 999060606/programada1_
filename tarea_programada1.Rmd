@@ -219,3 +219,17 @@ Total <- nrow(Lista_showTV)
 ```
 
 
+```{r}
+Lista_showTV <- datos_limpios|>
+  filter(Tipo =="TV Show", Año == 2020, Mes == 3)
+
+Total <- nrow(Lista_showTV)
+#en total hay 44 TV show que se añadieron en marzo del 2020
+```
+```{r}
+Lista_showTV <- datos_limpios|>
+  filter(Tipo =="TV Show", Año == 2020, Mes == 3)
+
+Total <- nrow(Lista_showTV)
+#en total hay 44 TV show que se añadieron en marzo del 2020
+```
